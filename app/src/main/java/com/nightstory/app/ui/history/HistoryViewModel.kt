@@ -70,10 +70,10 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             _isLoadingSpeech.value = story.id
             viewModelScope.launch {
                 ttsRepository.generateSpeech(story.content)
-                    .onSuccess { audioBytes ->
+                    .onSuccess { audioBytes: ByteArray ->
                         playAudioBytes(audioBytes, story.id)
                     }
-                    .onFailure {
+                    .onFailure { _: Throwable ->
                         _isLoadingSpeech.value = null
                         // Fallback to device TTS
                         deviceTts?.speak(story.content, TextToSpeech.QUEUE_FLUSH, null, "story_${story.id}")

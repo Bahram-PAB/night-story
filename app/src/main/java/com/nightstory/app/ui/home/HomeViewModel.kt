@@ -98,10 +98,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.value = _uiState.value.copy(isGeneratingSpeech = true, error = null)
             viewModelScope.launch {
                 ttsRepository.generateSpeech(story.content)
-                    .onSuccess { audioBytes ->
+                    .onSuccess { audioBytes: ByteArray ->
                         playAudioBytes(audioBytes)
                     }
-                    .onFailure { e ->
+                    .onFailure { e: Throwable ->
                         _uiState.value = _uiState.value.copy(
                             isGeneratingSpeech = false,
                             error = e.message ?: "Failed to generate speech"

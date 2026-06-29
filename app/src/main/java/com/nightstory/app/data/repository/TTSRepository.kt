@@ -6,30 +6,25 @@ import com.nightstory.app.data.api.*
 
 class TTSRepository(private val settingsStore: SettingsStore) {
 
-    sealed class TTSResult {
-        data class Success(val audioBytes: ByteArray) : TTSResult()
-        data class Error(val message: String) : TTSResult()
-    }
-
-    suspend fun generateSpeech(text: String): TTSResult {
+    suspend fun generateSpeech(text: String): Result<ByteArray> {
         return when (settingsStore.ttsProvider) {
             "openai" -> generateOpenAISpeech(text)
             "google" -> generateGoogleSpeech(text)
-            else -> TTSResult.Error("Use device TTS for this provider")
+            else -> Result.failure(IllegalStateException("Use device TTS for this provider"))
         }
     }
 
-    private suspend fun generateOpenAISpeech(text: String): TTSResult {
+    private suspend fun generateOpenAISpeech(text: String): Result<ByteArray> {
         val apiKey = settingsStore.openaiTTSApiKey
         if (apiKey.isBlank()) {
-            return TTSResult.Error("Please set your OpenAI TTS API key in Settings")
+            return Result.failure(IllegalStateException("Please set your OpenAI TTS API key in Settings"))
         }
 
         return try {
             val service = TTSClient.createOpenAIService(settingsStore.openaiTTSBaseUrl)
             val request = OpenAITTSRequest(
                 model = settingsStore.openaiTTSModel,
-                input = text.take(4096), // OpenAI TTS limit
+                input = text.take(4096),
                 voice = settingsStore.openaiTVoice,
                 speed = settingsStore.openaiTTSSpeed.toDouble()
             )
@@ -41,21 +36,21 @@ class TTSRepository(private val settingsStore: SettingsStore) {
 
             if (response.isSuccessful) {
                 val bytes = response.body()?.bytes()
-                    ?: return TTSResult.Error("Empty audio response")
-                TTSResult.Success(bytes)
+                    ?: return Result.failure(RuntimeException("Empty audio response"))
+                Result.success(bytes)
             } else {
                 val error = response.errorBody()?.string() ?: "Unknown error"
-                TTSResult.Error("TTS API Error (${response.code()}): $error")
+                Result.failure(RuntimeException("TTS API Error (${response.code()}): $error"))
             }
         } catch (e: Exception) {
-            TTSResult.Error("Network error: ${e.message}")
+            Result.failure(RuntimeException("Network error: ${e.message}"))
         }
     }
 
-    private suspend fun generateGoogleSpeech(text: String): TTSResult {
+    private suspend fun generateGoogleSpeech(text: String): Result<ByteArray> {
         val apiKey = settingsStore.googleTTSApiKey
         if (apiKey.isBlank()) {
-            return TTSResult.Error("Please set your Google Cloud TTS API key in Settings")
+            return Result.failure(IllegalStateException("Please set your Google Cloud TTS API key in Settings"))
         }
 
         return try {
@@ -82,15 +77,15 @@ class TTSRepository(private val settingsStore: SettingsStore) {
 
             if (response.isSuccessful) {
                 val audioBase64 = response.body()?.audioContent
-                    ?: return TTSResult.Error("Empty audio response")
+                    ?: return Result.failure(RuntimeException("Empty audio response"))
                 val bytes = Base64.decode(audioBase64, Base64.DEFAULT)
-                TTSResult.Success(bytes)
+                Result.success(bytes)
             } else {
                 val error = response.errorBody()?.string() ?: "Unknown error"
-                TTSResult.Error("Google TTS Error (${response.code()}): $error")
+                Result.failure(RuntimeException("Google TTS Error (${response.code()}): $error"))
             }
         } catch (e: Exception) {
-            TTSResult.Error("Network error: ${e.message}")
+            Result.failure(RuntimeException("Network error: ${e.message}"))
         }
     }
 }

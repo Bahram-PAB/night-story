@@ -28,14 +28,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NightStoryTheme {
-                NightStoryApp()
+                NightStoryNavHost()
             }
         }
     }
 }
 
 @Composable
-fun NightStoryApp() {
+fun NightStoryNavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
