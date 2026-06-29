@@ -1,22 +1,15 @@
 package com.nightstory.app.ui.history
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,33 +18,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
     val stories by viewModel.stories.collectAsState()
-    val context = LocalContext.current
+    val speakingId by viewModel.speakingStoryId.collectAsState()
+    val loadingId by viewModel.isLoadingSpeech.collectAsState()
     var storyToDelete by remember { mutableStateOf<StoryEntity?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
 
-    // TTS
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var speakingStoryId by remember { mutableStateOf<Long?>(null) }
-
-    DisposableEffect(context) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
-                tts?.setSpeechRate(0.85f)
-                tts?.setPitch(1.1f)
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
-
-    // Delete confirmation dialog
+    // Delete confirmation
     storyToDelete?.let { story ->
         AlertDialog(
             onDismissRequest = { storyToDelete = null },
@@ -69,7 +44,6 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
         )
     }
 
-    // Delete all confirmation
     if (showDeleteAllDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteAllDialog = false },
@@ -115,11 +89,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
                 }
                 if (stories.isNotEmpty()) {
                     IconButton(onClick = { showDeleteAllDialog = true }) {
-                        Icon(
-                            Icons.Default.DeleteSweep,
-                            contentDescription = "Delete all",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        Icon(Icons.Default.DeleteSweep, "Delete all", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -127,23 +97,13 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
             Spacer(Modifier.height(16.dp))
 
             if (stories.isEmpty()) {
-                // Empty state
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "\uD83D\uDCD6",
-                            style = MaterialTheme.typography.displayLarge
-                        )
+                        Text("\uD83D\uDCD6", style = MaterialTheme.typography.displayLarge)
                         Spacer(Modifier.height(16.dp))
+                        Text("No stories yet!", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "No stories yet!",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(
-                            text = "Go to Home and create your first story",
+                            "Go to Home and create your first story",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -157,16 +117,9 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
                     items(stories, key = { it.id }) { story ->
                         StoryCard(
                             story = story,
-                            isSpeaking = speakingStoryId == story.id,
-                            onPlay = {
-                                if (speakingStoryId == story.id) {
-                                    tts?.stop()
-                                    speakingStoryId = null
-                                } else {
-                                    tts?.speak(story.content, TextToSpeech.QUEUE_FLUSH, null, "story_${story.id}")
-                                    speakingStoryId = story.id
-                                }
-                            },
+                            isSpeaking = speakingId == story.id,
+                            isLoading = loadingId == story.id,
+                            onPlay = { viewModel.speakStory(story) },
                             onDelete = { storyToDelete = story }
                         )
                     }
@@ -180,6 +133,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
 fun StoryCard(
     story: StoryEntity,
     isSpeaking: Boolean,
+    isLoading: Boolean,
     onPlay: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -187,72 +141,46 @@ fun StoryCard(
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy \u2022 h:mm a", Locale.getDefault()) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        modifier = Modifier.fillMaxWidth().animateContentSize(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = story.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = dateFormat.format(Date(story.createdAt)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(story.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(dateFormat.format(Date(story.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row {
-                    IconButton(onClick = onPlay) {
-                        Icon(
-                            if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = if (isSpeaking) "Stop" else "Read aloud",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    IconButton(onClick = onPlay, enabled = !isLoading) {
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(
+                                if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                contentDescription = if (isSpeaking) "Stop" else "Read aloud",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
 
-            // Expandable content
             if (expanded) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = story.content,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(story.content, style = MaterialTheme.typography.bodyMedium)
             }
 
-            // Expand/collapse button
-            TextButton(
-                onClick = { expanded = !expanded },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+            TextButton(onClick = { expanded = !expanded }, modifier = Modifier.align(Alignment.End)) {
+                Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(if (expanded) "Show less" else "Read more")
             }

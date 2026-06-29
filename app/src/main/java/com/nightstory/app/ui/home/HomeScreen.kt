@@ -1,6 +1,5 @@
 package com.nightstory.app.ui.home
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,35 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-
-    // Android TTS engine
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var isSpeaking by remember { mutableStateOf(false) }
-
-    DisposableEffect(context) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
-                tts?.setSpeechRate(0.85f)
-                tts?.setPitch(1.1f) // slightly higher pitch for kid-friendly voice
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
 
     Scaffold { padding ->
         Column(
@@ -167,36 +144,35 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     // Read Aloud button
                     FilledTonalButton(
                         onClick = {
-                            if (isSpeaking) {
-                                tts?.stop()
-                                isSpeaking = false
+                            if (uiState.isSpeaking) {
+                                viewModel.stopSpeaking()
                             } else {
-                                tts?.speak(
-                                    story.content,
-                                    TextToSpeech.QUEUE_FLUSH,
-                                    null,
-                                    "story_${story.id}"
-                                )
-                                isSpeaking = true
+                                viewModel.speakStory()
                             }
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = !uiState.isGeneratingSpeech
                     ) {
-                        Icon(
-                            if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = null
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(if (isSpeaking) "Stop" else "\uD83D\uDD0A Read Aloud")
+                        if (uiState.isGeneratingSpeech) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Generating voice...")
+                        } else {
+                            Icon(
+                                if (uiState.isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(if (uiState.isSpeaking) "Stop" else "\uD83D\uDD0A Read Aloud")
+                        }
                     }
 
                     // New Story button
                     OutlinedButton(
-                        onClick = {
-                            tts?.stop()
-                            isSpeaking = false
-                            viewModel.clearStory()
-                        }
+                        onClick = { viewModel.clearStory() }
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                     }
@@ -205,15 +181,5 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
             Spacer(Modifier.height(32.dp))
         }
-    }
-
-    // Reset speaking state when TTS finishes
-    LaunchedEffect(tts) {
-        tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
-            override fun onDone(utteranceId: String?) { isSpeaking = false }
-            @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?) { isSpeaking = false }
-        })
     }
 }
