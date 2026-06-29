@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="seed">#6750A4</color>
+    <color name="night_bg">#1A1A2E</color>
+    <color name="night_surface">#16213E</color>
+    <color name="star_yellow">#FFD54F</color>
+    <color name="moon_white">#FFF8E1</color>
+    <color name="dream_purple">#7C4DFF</color>
+    <color name="sky_blue">#64B5F6</color>
+</resources>
