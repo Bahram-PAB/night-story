@@ -7,14 +7,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.nightstory.app.data.SettingsStore
 import com.nightstory.app.ui.history.HistoryScreen
 import com.nightstory.app.ui.home.HomeScreen
 import com.nightstory.app.ui.navigation.Screen
@@ -27,11 +29,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val settingsStore = remember { SettingsStore(applicationContext) }
+            val layoutDirection = remember {
+                if (isRTL(settingsStore.storyLanguage)) LayoutDirection.Rtl
+                else LayoutDirection.Ltr
+            }
+
             NightStoryTheme {
-                NightStoryNavHost()
+                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+                    NightStoryNavHost()
+                }
             }
         }
     }
+}
+
+fun isRTL(language: String): Boolean {
+    return language in listOf("Arabic", "Persian", "Hebrew", "Urdu")
 }
 
 @Composable

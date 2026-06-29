@@ -90,13 +90,18 @@ class StoryRepository(
     private fun buildSystemPrompt(): String {
         val language = settingsStore.storyLanguage
         val style = settingsStore.storyStyle
+        val isRTL = language in listOf("Persian", "Arabic")
+
+        val rtlNote = if (isRTL) {
+            "\nIMPORTANT: Write entirely in $language script (not transliterated). Use proper $language grammar and vocabulary."
+        } else ""
 
         return """You are a wonderful children's story writer.
 
 Your task: Write a short bedtime story for kids (ages 3-8).
 
 Rules:
-- Write in $language
+- Write in $language$rtlNote
 - Story style: $style
 - Keep it 150-300 words
 - Use simple, easy-to-understand language
