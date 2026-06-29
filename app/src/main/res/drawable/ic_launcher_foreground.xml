@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Moon -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M54,30 C40,30 30,42 30,54 C30,66 40,78 54,78 C48,74 44,64 44,54 C44,44 48,34 54,30Z" />
+
+    <!-- Star 1 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,35 L74,40 L79,40 L75,43 L76,48 L72,45 L68,48 L69,43 L65,40 L70,40Z" />
+
+    <!-- Star 2 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,60 L39.5,63 L43,63 L40,65 L41,68 L38,66 L35,68 L36,65 L33,63 L36.5,63Z" />
+
+    <!-- Star 3 (small) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65,62 L66,64 L68,64 L66.5,65.5 L67,67 L65,66 L63,67 L63.5,65.5 L62,64 L64,64Z" />
+
+    <!-- Open book -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,65 Q54,58 54,58 Q54,58 54,72 Q54,65 42,72Z" />
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M66,65 Q54,58 54,58 Q54,58 54,72 Q54,65 66,72Z" />
+</vector>
