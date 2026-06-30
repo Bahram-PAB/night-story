@@ -22,6 +22,8 @@ import com.nightstory.app.ui.home.HomeScreen
 import com.nightstory.app.ui.navigation.Screen
 import com.nightstory.app.ui.navigation.bottomNavItems
 import com.nightstory.app.ui.settings.SettingsScreen
+import com.nightstory.app.ui.strings.LocalStrings
+import com.nightstory.app.ui.strings.LocalizationManager
 import com.nightstory.app.ui.theme.NightStoryTheme
 
 class MainActivity : ComponentActivity() {
@@ -30,13 +32,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val settingsStore = remember { SettingsStore(applicationContext) }
-            val layoutDirection = remember {
-                if (isRTL(settingsStore.storyLanguage)) LayoutDirection.Rtl
-                else LayoutDirection.Ltr
+            val currentLanguage = remember { settingsStore.storyLanguage }
+            val strings = remember(currentLanguage) { LocalizationManager.getStrings(currentLanguage) }
+            val layoutDirection = remember(currentLanguage) {
+                if (isRTL(currentLanguage)) LayoutDirection.Rtl else LayoutDirection.Ltr
             }
 
             NightStoryTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+                CompositionLocalProvider(
+                    LocalStrings provides strings,
+                    LocalLayoutDirection provides layoutDirection
+                ) {
                     NightStoryNavHost()
                 }
             }
@@ -53,15 +59,21 @@ fun NightStoryNavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val s = LocalStrings.current
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar {
                 bottomNavItems.forEach { screen ->
+                    val label = when (screen) {
+                        is Screen.Home -> s.navHome
+                        is Screen.History -> s.navHistory
+                        is Screen.Settings -> s.navSettings
+                    }
                     NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.label) },
-                        label = { Text(screen.label) },
+                        icon = { Icon(screen.icon, contentDescription = label) },
+                        label = { Text(label) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {
