@@ -22,7 +22,6 @@ import java.util.Locale
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
     val stories by viewModel.stories.collectAsState()
-    val speakingId by viewModel.speakingStoryId.collectAsState()
     var storyToDelete by remember { mutableStateOf<StoryEntity?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     val s = LocalStrings.current
@@ -63,7 +62,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 32.dp)) {
                     items(stories, key = { it.id }) { story ->
-                        StoryCard(story, speakingId == story.id, { viewModel.speakStory(story) }, { storyToDelete = story })
+                        StoryCard(story, { storyToDelete = story })
                     }
                 }
             }
@@ -72,7 +71,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
 }
 
 @Composable
-fun StoryCard(story: StoryEntity, isSpeaking: Boolean, onPlay: () -> Unit, onDelete: () -> Unit) {
+fun StoryCard(story: StoryEntity, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy \u2022 h:mm a", Locale.getDefault()) }
     val s = LocalStrings.current
@@ -84,10 +83,7 @@ fun StoryCard(story: StoryEntity, isSpeaking: Boolean, onPlay: () -> Unit, onDel
                     Text(story.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(dateFormat.format(Date(story.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Row {
-                    IconButton(onClick = onPlay) { Icon(if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow, if (isSpeaking) s.stopButton else s.readAloud, tint = MaterialTheme.colorScheme.primary) }
-                    IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, s.deleteStory, tint = MaterialTheme.colorScheme.error) }
-                }
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, s.deleteStory, tint = MaterialTheme.colorScheme.error) }
             }
             if (expanded) {
                 Spacer(Modifier.height(8.dp)); HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant); Spacer(Modifier.height(8.dp))

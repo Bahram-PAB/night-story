@@ -1,6 +1,7 @@
 package com.nightstory.app.ui.home
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,6 +21,7 @@ import com.nightstory.app.ui.strings.LocalStrings
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val s = LocalStrings.current
+    val uriHandler = LocalUriHandler.current
 
     Scaffold { padding ->
         Column(
@@ -45,22 +48,14 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
             Spacer(Modifier.height(32.dp))
 
-            // ===== TWO MAIN BUTTONS =====
-
             // Random Story Button
             Button(
                 onClick = { viewModel.generateRandom() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = !uiState.isGenerating
             ) {
                 if (uiState.isGenerating && !uiState.showCustomInput) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(Modifier.size(22.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     Spacer(Modifier.width(10.dp))
                     Text(s.generatingText)
                 } else {
@@ -75,9 +70,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             // Custom Story Button
             OutlinedButton(
                 onClick = { viewModel.toggleCustomInput() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = !uiState.isGenerating
             ) {
                 Icon(Icons.Default.Edit, null)
@@ -85,18 +78,14 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 Text(s.customStoryButton, style = MaterialTheme.typography.titleMedium)
             }
 
-            // Custom input section
+            // Custom input
             AnimatedVisibility(visible = uiState.showCustomInput) {
                 Column {
                     Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
-                        value = uiState.customPrompt,
-                        onValueChange = { viewModel.updateCustomPrompt(it) },
-                        label = { Text(s.customPromptLabel) },
-                        placeholder = { Text(s.customPromptPlaceholder) },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2,
-                        maxLines = 4,
+                        uiState.customPrompt, { viewModel.updateCustomPrompt(it) },
+                        label = { Text(s.customPromptLabel) }, placeholder = { Text(s.customPromptPlaceholder) },
+                        modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4,
                         enabled = !uiState.isGenerating
                     )
                     Spacer(Modifier.height(12.dp))
@@ -143,23 +132,53 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // Action buttons
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FilledTonalButton(
-                        onClick = { if (uiState.isSpeaking) viewModel.stopSpeaking() else viewModel.speakStory() },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(if (uiState.isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow, null)
-                        Spacer(Modifier.width(6.dp))
-                        Text(if (uiState.isSpeaking) s.stopButton else s.readAloud)
-                    }
-                    OutlinedButton(onClick = { viewModel.clearStory() }) {
-                        Icon(Icons.Default.Refresh, null)
-                    }
+                // New story button
+                OutlinedButton(onClick = { viewModel.clearStory() }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Refresh, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("داستان جدید")
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(48.dp))
+
+            // ===== FOOTER =====
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                text = "${s.appName} v1.2.0",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "ساخته شده با ❤️",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "GitHub",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { uriHandler.openUri("https://github.com/Bahram-PAB") }
+                )
+                Text(
+                    text = "LinkedIn",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { uriHandler.openUri("https://www.linkedin.com/in/bahram-pouralibaba-1a992239") }
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "توسعه‌دهنده: بهرام پورعلی‌ibaba",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

@@ -23,6 +23,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val s = LocalStrings.current
     var showApiKey by remember { mutableStateOf(false) }
+    var apiLocked by remember { mutableStateOf(true) }
 
     LaunchedEffect(uiState.saved) {
         if (uiState.saved) { kotlinx.coroutines.delay(2000); viewModel.clearSaved() }
@@ -35,127 +36,150 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             Text(s.settingsSubtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(28.dp))
 
-            // ===== API SETTINGS =====
-            SectionHeader(s.apiSettings, Icons.Default.Cloud)
-            Spacer(Modifier.height(8.dp))
-
-            // Endpoint
-            OutlinedTextField(
-                uiState.apiEndpoint, { viewModel.updateApiEndpoint(it) },
-                label = { Text(s.apiEndpoint) }, placeholder = { Text(s.apiEndpointPlaceholder) },
-                modifier = Modifier.fillMaxWidth(), singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Link, null) }
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(s.apiEndpointHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            Spacer(Modifier.height(12.dp))
-
-            // API Key
-            OutlinedTextField(
-                uiState.apiKey, { viewModel.updateApiKey(it) },
-                label = { Text(s.apiKeyLabel) }, placeholder = { Text(s.apiKeyPlaceholder) },
-                modifier = Modifier.fillMaxWidth(), singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Key, null) },
-                trailingIcon = { IconButton(onClick = { showApiKey = !showApiKey }) { Icon(if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility, s.toggleVisibility) } },
-                visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation()
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(s.apiKeyHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            Spacer(Modifier.height(16.dp))
-
-            // ===== TEST CONNECTION BUTTON =====
-            Button(
-                onClick = { viewModel.testConnection() },
+            // ===== API SETTINGS (LOCKABLE) =====
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isTesting && uiState.apiEndpoint.isNotBlank() && uiState.apiKey.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (uiState.isTesting) {
-                    CircularProgressIndicator(Modifier.size(18.dp), color = MaterialTheme.colorScheme.onSecondary, strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text("در حال تست...")
-                } else {
-                    Icon(Icons.Default.WifiFind, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("🔌 تست ارتباط API")
+                SectionHeader(s.apiSettings, Icons.Default.Cloud)
+                FilledTonalIconButton(onClick = { apiLocked = !apiLocked }) {
+                    Icon(
+                        if (apiLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        contentDescription = if (apiLocked) "قفل" else "باز",
+                        tint = if (apiLocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
-            // Test result
-            uiState.testResult?.let { result ->
+            if (apiLocked) {
                 Spacer(Modifier.height(8.dp))
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = when (result) {
-                            is TestResult.Success -> MaterialTheme.colorScheme.primaryContainer
-                            is TestResult.Error -> MaterialTheme.colorScheme.errorContainer
-                        }
-                    )
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            when (result) {
-                                is TestResult.Success -> Icons.Default.CheckCircle
-                                is TestResult.Error -> Icons.Default.Error
-                            },
-                            null,
-                            tint = when (result) {
-                                is TestResult.Success -> MaterialTheme.colorScheme.primary
-                                is TestResult.Error -> MaterialTheme.colorScheme.error
-                            }
-                        )
-                        Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Shield, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("تنظیمات API قفل است", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            when (result) {
-                                is TestResult.Success -> "✅ ارتباط برقرار شد! ${result.modelCount} مدل یافت شد."
-                                is TestResult.Error -> "❌ ${result.message}"
-                            },
-                            style = MaterialTheme.typography.bodyMedium
+                            "برای تغییر، قفل را باز کنید",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Model Name - editable text or dropdown if models available
-            if (uiState.availableModels.isNotEmpty()) {
-                // Model dropdown from fetched models
-                var modelExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = modelExpanded, onExpandedChange = { modelExpanded = it }) {
-                    OutlinedTextField(
-                        uiState.modelName.ifBlank { "یک مدل انتخاب کنید" }, {},
-                        readOnly = true,
-                        label = { Text(s.modelNameLabel) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        leadingIcon = { Icon(Icons.Default.SmartToy, null) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(modelExpanded) }
-                    )
-                    ExposedDropdownMenu(expanded = modelExpanded, onDismissRequest = { modelExpanded = false }) {
-                        uiState.availableModels.forEach { model ->
-                            DropdownMenuItem(
-                                text = { Text(model) },
-                                onClick = { viewModel.selectModel(model); modelExpanded = false }
-                            )
+                        if (uiState.apiEndpoint.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("سرور: ${uiState.apiEndpoint.take(40)}...", style = MaterialTheme.typography.bodySmall)
+                            Text("مدل: ${uiState.modelName.ifBlank { "تنظیم نشده" }}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
-            } else {
-                // Manual model input
-                OutlinedTextField(
-                    uiState.modelName, { viewModel.updateModelName(it) },
-                    label = { Text(s.modelNameLabel) }, placeholder = { Text(s.modelNamePlaceholder) },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.SmartToy, null) }
-                )
             }
-            Spacer(Modifier.height(4.dp))
-            Text(s.modelNameHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            AnimatedVisibility(visible = !apiLocked) {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+
+                    // Endpoint
+                    OutlinedTextField(
+                        uiState.apiEndpoint, { viewModel.updateApiEndpoint(it) },
+                        label = { Text(s.apiEndpoint) }, placeholder = { Text(s.apiEndpointPlaceholder) },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Link, null) }
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(s.apiEndpointHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+
+                    // API Key
+                    OutlinedTextField(
+                        uiState.apiKey, { viewModel.updateApiKey(it) },
+                        label = { Text(s.apiKeyLabel) }, placeholder = { Text(s.apiKeyPlaceholder) },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Key, null) },
+                        trailingIcon = { IconButton(onClick = { showApiKey = !showApiKey }) { Icon(if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility, s.toggleVisibility) } },
+                        visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation()
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(s.apiKeyHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(16.dp))
+
+                    // Test Connection
+                    Button(
+                        onClick = { viewModel.testConnection() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isTesting && uiState.apiEndpoint.isNotBlank() && uiState.apiKey.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        if (uiState.isTesting) {
+                            CircularProgressIndicator(Modifier.size(18.dp), color = MaterialTheme.colorScheme.onSecondary, strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("در حال تست...")
+                        } else {
+                            Icon(Icons.Default.WifiFind, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("🔌 تست ارتباط API")
+                        }
+                    }
+
+                    // Test result
+                    uiState.testResult?.let { result ->
+                        Spacer(Modifier.height(8.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = when (result) {
+                                    is TestResult.Success -> MaterialTheme.colorScheme.primaryContainer
+                                    is TestResult.Error -> MaterialTheme.colorScheme.errorContainer
+                                }
+                            )
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    when (result) { is TestResult.Success -> Icons.Default.CheckCircle; is TestResult.Error -> Icons.Default.Error },
+                                    null, tint = when (result) { is TestResult.Success -> MaterialTheme.colorScheme.primary; is TestResult.Error -> MaterialTheme.colorScheme.error }
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    when (result) { is TestResult.Success -> "✅ ارتباط برقرار شد! ${result.modelCount} مدل یافت شد."; is TestResult.Error -> "❌ ${result.message}" },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Model selector
+                    if (uiState.availableModels.isNotEmpty()) {
+                        var modelExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = modelExpanded, onExpandedChange = { modelExpanded = it }) {
+                            OutlinedTextField(
+                                uiState.modelName.ifBlank { "یک مدل انتخاب کنید" }, {}, readOnly = true,
+                                label = { Text(s.modelNameLabel) }, modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                leadingIcon = { Icon(Icons.Default.SmartToy, null) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(modelExpanded) }
+                            )
+                            ExposedDropdownMenu(expanded = modelExpanded, onDismissRequest = { modelExpanded = false }) {
+                                uiState.availableModels.forEach { model ->
+                                    DropdownMenuItem(text = { Text(model) }, onClick = { viewModel.selectModel(model); modelExpanded = false })
+                                }
+                            }
+                        }
+                    } else {
+                        OutlinedTextField(
+                            uiState.modelName, { viewModel.updateModelName(it) },
+                            label = { Text(s.modelNameLabel) }, placeholder = { Text(s.modelNamePlaceholder) },
+                            modifier = Modifier.fillMaxWidth(), singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.SmartToy, null) }
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(s.modelNameHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
 
             Spacer(Modifier.height(28.dp))
             HorizontalDivider()
@@ -165,7 +189,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             SectionHeader(s.storyPreferences, Icons.Default.Palette)
             Spacer(Modifier.height(8.dp))
 
-            // Language
             val langPairs = LocalizationManager.getLocalizedLanguageList()
             val currentLangDisplay = langPairs.firstOrNull { it.first == uiState.language }?.second ?: uiState.language
             DropdownField(s.storyLanguage, currentLangDisplay, langPairs.map { it.second }, Icons.Default.Language) { selected ->
@@ -173,7 +196,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             }
             Spacer(Modifier.height(12.dp))
 
-            // Style
             val styleList = LocalizationManager.getLocalizedStyleList(s)
             val currentStyleDisplay = LocalizationManager.getStyleDisplay(uiState.style, s)
             DropdownField(s.storyStyle, currentStyleDisplay, styleList, Icons.Default.Style) { selected ->
@@ -181,7 +203,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             }
             Spacer(Modifier.height(12.dp))
 
-            // Gender
             val genderOptions = listOf("boy" to s.genderBoy, "girl" to s.genderGirl, "both" to s.genderBoth)
             val currentGenderDisplay = genderOptions.firstOrNull { it.first == uiState.gender }?.second ?: s.genderBoth
             DropdownField(s.childGender, currentGenderDisplay, genderOptions.map { it.second }, Icons.Default.ChildCare) { selected ->
@@ -189,7 +210,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             }
             Spacer(Modifier.height(12.dp))
 
-            // Age Range
             val ageOptions = listOf("0-2" to s.ageBaby, "3-5" to s.ageToddler, "6-8" to s.ageChild, "9-12" to s.ageOlder)
             val currentAgeDisplay = ageOptions.firstOrNull { it.first == uiState.ageRange }?.second ?: s.ageToddler
             DropdownField(s.ageRange, currentAgeDisplay, ageOptions.map { it.second }, Icons.Default.Cake) { selected ->

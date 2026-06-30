@@ -250,10 +250,13 @@ class StoryRepository(
 
     private fun extractTitle(content: String, prompt: String): String {
         val firstLine = content.lines().first().trim()
-        if (firstLine.length in 3..60 && !firstLine.endsWith(".")) {
+        // Use first line as title if it looks like one (short, no period ending)
+        if (firstLine.length in 3..80 && !firstLine.endsWith(".")) {
             return firstLine
         }
-        return prompt.take(50).let {
+        // Fallback: create title from first 50 chars of content
+        val words = content.take(100).substringBefore("\n")
+        return words.take(50).let {
             if (it.length == 50) "$it..." else it
         }
     }
