@@ -95,6 +95,46 @@ class StoryRepository(
         storyDao.getStoryById(story.id)?.let { storyDao.delete(it) }
     }
 
+    suspend fun testConnection(): Result<List<String>> = runCatching {
+        val endpoint = settingsStore.apiEndpoint
+        require(endpoint.isNotBlank()) { "آدرس سرور وارد نشده" }
+
+        val apiKey = settingsStore.apiKey
+        require(apiKey.isNotBlank()) { "کلید API وارد نشده" }
+
+        val service = ChatClient.createService(endpoint)
+        val response = service.listModels(auth = "Bearer $apiKey")
+
+        if (!response.isSuccessful) {
+            val error = response.errorBody()?.string() ?: "خطای ناشناخته"
+            throw RuntimeException("خطا (${response.code()}): $error")
+        }
+
+        val models = response.body()?.data?.map { it.id }?.sorted()
+            ?: throw RuntimeException("لیست مدل‌ها خالی است")
+
+        models
+    }
+
+    suspend fun fetchModels(): List<String> {
+        return try {
+            val endpoint = settingsStore.apiEndpoint
+            val apiKey = settingsStore.apiKey
+            if (endpoint.isBlank() || apiKey.isBlank()) return emptyList()
+
+            val service = ChatClient.createService(endpoint)
+            val response = service.listModels(auth = "Bearer $apiKey")
+
+            if (response.isSuccessful) {
+                response.body()?.data?.map { it.id }?.sorted() ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     private fun buildRandomPrompt(seed: Int): String {
         val lang = settingsStore.storyLanguage
         val style = settingsStore.storyStyle

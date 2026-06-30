@@ -22,7 +22,14 @@ object ChatClient {
     }
 
     fun createService(baseUrl: String): ChatService {
-        val url = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        // Normalize: strip trailing slashes and /v1 suffix
+        // since service paths already include /v1/
+        var url = baseUrl.trimEnd('/')
+        if (url.endsWith("/v1")) {
+            url = url.removeSuffix("/v1")
+        }
+        url = "$url/"
+
         return Retrofit.Builder()
             .baseUrl(url)
             .client(okHttpClient)

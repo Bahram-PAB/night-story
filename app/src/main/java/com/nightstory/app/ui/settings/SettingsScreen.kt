@@ -1,5 +1,6 @@
 package com.nightstory.app.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -61,15 +63,97 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             Spacer(Modifier.height(4.dp))
             Text(s.apiKeyHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Model Name
-            OutlinedTextField(
-                uiState.modelName, { viewModel.updateModelName(it) },
-                label = { Text(s.modelNameLabel) }, placeholder = { Text(s.modelNamePlaceholder) },
-                modifier = Modifier.fillMaxWidth(), singleLine = true,
-                leadingIcon = { Icon(Icons.Default.SmartToy, null) }
-            )
+            // ===== TEST CONNECTION BUTTON =====
+            Button(
+                onClick = { viewModel.testConnection() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isTesting && uiState.apiEndpoint.isNotBlank() && uiState.apiKey.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                if (uiState.isTesting) {
+                    CircularProgressIndicator(Modifier.size(18.dp), color = MaterialTheme.colorScheme.onSecondary, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("در حال تست...")
+                } else {
+                    Icon(Icons.Default.WifiFind, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("🔌 تست ارتباط API")
+                }
+            }
+
+            // Test result
+            uiState.testResult?.let { result ->
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = when (result) {
+                            is TestResult.Success -> MaterialTheme.colorScheme.primaryContainer
+                            is TestResult.Error -> MaterialTheme.colorScheme.errorContainer
+                        }
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            when (result) {
+                                is TestResult.Success -> Icons.Default.CheckCircle
+                                is TestResult.Error -> Icons.Default.Error
+                            },
+                            null,
+                            tint = when (result) {
+                                is TestResult.Success -> MaterialTheme.colorScheme.primary
+                                is TestResult.Error -> MaterialTheme.colorScheme.error
+                            }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            when (result) {
+                                is TestResult.Success -> "✅ ارتباط برقرار شد! ${result.modelCount} مدل یافت شد."
+                                is TestResult.Error -> "❌ ${result.message}"
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Model Name - editable text or dropdown if models available
+            if (uiState.availableModels.isNotEmpty()) {
+                // Model dropdown from fetched models
+                var modelExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(expanded = modelExpanded, onExpandedChange = { modelExpanded = it }) {
+                    OutlinedTextField(
+                        uiState.modelName.ifBlank { "یک مدل انتخاب کنید" }, {},
+                        readOnly = true,
+                        label = { Text(s.modelNameLabel) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        leadingIcon = { Icon(Icons.Default.SmartToy, null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(modelExpanded) }
+                    )
+                    ExposedDropdownMenu(expanded = modelExpanded, onDismissRequest = { modelExpanded = false }) {
+                        uiState.availableModels.forEach { model ->
+                            DropdownMenuItem(
+                                text = { Text(model) },
+                                onClick = { viewModel.selectModel(model); modelExpanded = false }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Manual model input
+                OutlinedTextField(
+                    uiState.modelName, { viewModel.updateModelName(it) },
+                    label = { Text(s.modelNameLabel) }, placeholder = { Text(s.modelNamePlaceholder) },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.SmartToy, null) }
+                )
+            }
             Spacer(Modifier.height(4.dp))
             Text(s.modelNameHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -87,7 +171,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             DropdownField(s.storyLanguage, currentLangDisplay, langPairs.map { it.second }, Icons.Default.Language) { selected ->
                 viewModel.updateLanguage(langPairs.firstOrNull { it.second == selected }?.first ?: selected)
             }
-
             Spacer(Modifier.height(12.dp))
 
             // Style
@@ -96,7 +179,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             DropdownField(s.storyStyle, currentStyleDisplay, styleList, Icons.Default.Style) { selected ->
                 viewModel.updateStyle(LocalizationManager.getStyleId(selected, s))
             }
-
             Spacer(Modifier.height(12.dp))
 
             // Gender
@@ -105,13 +187,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             DropdownField(s.childGender, currentGenderDisplay, genderOptions.map { it.second }, Icons.Default.ChildCare) { selected ->
                 viewModel.updateGender(genderOptions.firstOrNull { it.second == selected }?.first ?: "both")
             }
-
             Spacer(Modifier.height(12.dp))
 
             // Age Range
-            val ageOptions = listOf(
-                "0-2" to s.ageBaby, "3-5" to s.ageToddler, "6-8" to s.ageChild, "9-12" to s.ageOlder
-            )
+            val ageOptions = listOf("0-2" to s.ageBaby, "3-5" to s.ageToddler, "6-8" to s.ageChild, "9-12" to s.ageOlder)
             val currentAgeDisplay = ageOptions.firstOrNull { it.first == uiState.ageRange }?.second ?: s.ageToddler
             DropdownField(s.ageRange, currentAgeDisplay, ageOptions.map { it.second }, Icons.Default.Cake) { selected ->
                 viewModel.updateAgeRange(ageOptions.firstOrNull { it.second == selected }?.first ?: "3-5")
