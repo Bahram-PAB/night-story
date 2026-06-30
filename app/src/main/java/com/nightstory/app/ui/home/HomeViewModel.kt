@@ -1,21 +1,18 @@
 package com.nightstory.app.ui.home
 
 import android.app.Application
-import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.Room
 import com.nightstory.app.data.SettingsStore
 import com.nightstory.app.data.db.AppDatabase
 import com.nightstory.app.data.repository.StoryRepository
-import com.nightstory.app.data.repository.TTSRepository
 import com.nightstory.app.domain.model.Story
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import androidx.room.Room
-import java.io.File
 import java.util.Locale
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,14 +23,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsStore = SettingsStore(application)
     private val repository = StoryRepository(db.storyDao(), settingsStore)
-    private val ttsRepository = TTSRepository(settingsStore)
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // Device TTS
+    // Device TTS only
     private var deviceTts: TextToSpeech? = null
-    private var mediaPlayer: MediaPlayer? = null
 
     init {
         deviceTts = TextToSpeech(application) { status ->
@@ -57,18 +52,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         })
     }
 
-    fun updatePrompt(prompt: String) {
-        _uiState.value = _uiState.value.copy(prompt = prompt)
+    fun updateCustomPrompt(prompt: String) {
+        _uiState.value = _uiState.value.copy(customPrompt = prompt)
     }
 
-    fun generateStory() {
-        val state = _uiState.value
-        if (state.prompt.isBlank() || state.isGenerating) return
-
-        _uiState.value = state.copy(isGenerating = true, error = null)
+    fun generateRandom() {
+        if (_uiState.value.isGenerating) return
+        _uiState.value = _uiState.value.copy(isGenerating = true, error = null)
 
         viewModelScope.launch {
-            repository.generateStory(state.prompt)
+            repository.generateRandomStory()
                 .onSuccess { story ->
                     _uiState.value = _uiState.value.copy(
                         isGenerating = false,
@@ -79,76 +72,48 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
                         isGenerating = false,
-                        error = e.message ?: "Something went wrong"
+                        error = e.message ?: "مشکلی پیش آمد"
                     )
                 }
         }
     }
 
-    fun speakStory() {
-        val story = _uiState.value.currentStory ?: return
-        val provider = settingsStore.ttsProvider
+    fun generateCustom() {
+        val prompt = _uiState.value.customPrompt
+        if (prompt.isBlank() || _uiState.value.isGenerating) return
+        _uiState.value = _uiState.value.copy(isGenerating = true, error = null)
 
-        if (provider == "device") {
-            // Use device TTS
-            deviceTts?.speak(story.content, TextToSpeech.QUEUE_FLUSH, null, "story")
-            _uiState.value = _uiState.value.copy(isSpeaking = true)
-        } else {
-            // Use API TTS
-            _uiState.value = _uiState.value.copy(isGeneratingSpeech = true, error = null)
-            viewModelScope.launch {
-                ttsRepository.generateSpeech(story.content)
-                    .onSuccess { audioBytes: ByteArray ->
-                        playAudioBytes(audioBytes)
-                    }
-                    .onFailure { e: Throwable ->
-                        _uiState.value = _uiState.value.copy(
-                            isGeneratingSpeech = false,
-                            error = e.message ?: "Failed to generate speech"
-                        )
-                    }
-            }
+        viewModelScope.launch {
+            repository.generateCustomStory(prompt)
+                .onSuccess { story ->
+                    _uiState.value = _uiState.value.copy(
+                        isGenerating = false,
+                        currentStory = story,
+                        error = null,
+                        showCustomInput = false
+                    )
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isGenerating = false,
+                        error = e.message ?: "مشکلی پیش آمد"
+                    )
+                }
         }
     }
 
-    private fun playAudioBytes(data: ByteArray) {
-        try {
-            val tempFile = File.createTempFile("story_", ".mp3", getApplication<Application>().cacheDir)
-            tempFile.writeBytes(data)
+    fun toggleCustomInput() {
+        _uiState.value = _uiState.value.copy(showCustomInput = !_uiState.value.showCustomInput)
+    }
 
-            mediaPlayer?.release()
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(tempFile.absolutePath)
-                prepare()
-                start()
-                setOnCompletionListener {
-                    _uiState.value = _uiState.value.copy(isSpeaking = false, isGeneratingSpeech = false)
-                    it.release()
-                    tempFile.delete()
-                }
-                setOnErrorListener { _, _, _ ->
-                    _uiState.value = _uiState.value.copy(isSpeaking = false, isGeneratingSpeech = false)
-                    tempFile.delete()
-                    true
-                }
-            }
-            _uiState.value = _uiState.value.copy(isSpeaking = true, isGeneratingSpeech = false)
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isSpeaking = false,
-                isGeneratingSpeech = false,
-                error = "Audio playback error: ${e.message}"
-            )
-        }
+    fun speakStory() {
+        val story = _uiState.value.currentStory ?: return
+        deviceTts?.speak(story.content, TextToSpeech.QUEUE_FLUSH, null, "story")
+        _uiState.value = _uiState.value.copy(isSpeaking = true)
     }
 
     fun stopSpeaking() {
         deviceTts?.stop()
-        mediaPlayer?.let {
-            if (it.isPlaying) it.stop()
-            it.release()
-        }
-        mediaPlayer = null
         _uiState.value = _uiState.value.copy(isSpeaking = false)
     }
 
@@ -158,21 +123,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearStory() {
         stopSpeaking()
-        _uiState.value = _uiState.value.copy(currentStory = null, prompt = "")
+        _uiState.value = _uiState.value.copy(currentStory = null, customPrompt = "", showCustomInput = false)
     }
 
     override fun onCleared() {
         deviceTts?.stop()
         deviceTts?.shutdown()
-        mediaPlayer?.release()
     }
 }
 
 data class HomeUiState(
-    val prompt: String = "",
+    val customPrompt: String = "",
     val isGenerating: Boolean = false,
     val isSpeaking: Boolean = false,
-    val isGeneratingSpeech: Boolean = false,
+    val showCustomInput: Boolean = false,
     val currentStory: Story? = null,
     val error: String? = null
 )

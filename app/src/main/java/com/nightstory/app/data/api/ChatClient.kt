@@ -6,14 +6,12 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-object ApiClient {
-
-    private const val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/"
+object ChatClient {
 
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
@@ -23,15 +21,13 @@ object ApiClient {
             .build()
     }
 
-    private val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(GEMINI_BASE_URL)
+    fun createService(baseUrl: String): ChatService {
+        val url = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        return Retrofit.Builder()
+            .baseUrl(url)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-    }
-
-    val geminiService: GeminiService by lazy {
-        retrofit.create(GeminiService::class.java)
+            .create(ChatService::class.java)
     }
 }

@@ -23,49 +23,34 @@ import java.util.Locale
 fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
     val stories by viewModel.stories.collectAsState()
     val speakingId by viewModel.speakingStoryId.collectAsState()
-    val loadingId by viewModel.isLoadingSpeech.collectAsState()
     var storyToDelete by remember { mutableStateOf<StoryEntity?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     val s = LocalStrings.current
 
     storyToDelete?.let { story ->
-        AlertDialog(
-            onDismissRequest = { storyToDelete = null },
-            title = { Text(s.deleteStory) },
+        AlertDialog(onDismissRequest = { storyToDelete = null }, title = { Text(s.deleteStory) },
             text = { Text(s.deleteStoryConfirm.format(story.title)) },
             confirmButton = { TextButton(onClick = { viewModel.deleteStory(story); storyToDelete = null }) { Text(s.delete) } },
-            dismissButton = { TextButton(onClick = { storyToDelete = null }) { Text(s.cancel) } }
-        )
+            dismissButton = { TextButton(onClick = { storyToDelete = null }) { Text(s.cancel) } })
     }
-
     if (showDeleteAllDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text(s.deleteAll) },
+        AlertDialog(onDismissRequest = { showDeleteAllDialog = false }, title = { Text(s.deleteAll) },
             text = { Text(s.deleteAllConfirm) },
             confirmButton = { TextButton(onClick = { viewModel.deleteAll(); showDeleteAllDialog = false }) { Text(s.delete, color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteAllDialog = false }) { Text(s.cancel) } }
-        )
+            dismissButton = { TextButton(onClick = { showDeleteAllDialog = false }) { Text(s.cancel) } })
     }
 
     Scaffold { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             Spacer(Modifier.height(24.dp))
-
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text(s.storyLibrary, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
                     Text(s.storiesSaved.format(stories.size), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (stories.isNotEmpty()) {
-                    IconButton(onClick = { showDeleteAllDialog = true }) {
-                        Icon(Icons.Default.DeleteSweep, s.deleteAll, tint = MaterialTheme.colorScheme.error)
-                    }
-                }
+                if (stories.isNotEmpty()) IconButton(onClick = { showDeleteAllDialog = true }) { Icon(Icons.Default.DeleteSweep, s.deleteAll, tint = MaterialTheme.colorScheme.error) }
             }
-
             Spacer(Modifier.height(16.dp))
-
             if (stories.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -78,7 +63,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 32.dp)) {
                     items(stories, key = { it.id }) { story ->
-                        StoryCard(story, speakingId == story.id, loadingId == story.id, { viewModel.speakStory(story) }, { storyToDelete = story })
+                        StoryCard(story, speakingId == story.id, { viewModel.speakStory(story) }, { storyToDelete = story })
                     }
                 }
             }
@@ -87,7 +72,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
 }
 
 @Composable
-fun StoryCard(story: StoryEntity, isSpeaking: Boolean, isLoading: Boolean, onPlay: () -> Unit, onDelete: () -> Unit) {
+fun StoryCard(story: StoryEntity, isSpeaking: Boolean, onPlay: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy \u2022 h:mm a", Locale.getDefault()) }
     val s = LocalStrings.current
@@ -100,23 +85,17 @@ fun StoryCard(story: StoryEntity, isSpeaking: Boolean, isLoading: Boolean, onPla
                     Text(dateFormat.format(Date(story.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row {
-                    IconButton(onClick = onPlay, enabled = !isLoading) {
-                        if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow, if (isSpeaking) s.stopButton else s.readAloud, tint = MaterialTheme.colorScheme.primary)
-                    }
+                    IconButton(onClick = onPlay) { Icon(if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow, if (isSpeaking) s.stopButton else s.readAloud, tint = MaterialTheme.colorScheme.primary) }
                     IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, s.deleteStory, tint = MaterialTheme.colorScheme.error) }
                 }
             }
             if (expanded) {
-                Spacer(Modifier.height(8.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp)); HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant); Spacer(Modifier.height(8.dp))
                 Text(story.content, style = MaterialTheme.typography.bodyMedium)
             }
             TextButton(onClick = { expanded = !expanded }, modifier = Modifier.align(Alignment.End)) {
                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(if (expanded) s.showLess else s.readMore)
+                Spacer(Modifier.width(4.dp)); Text(if (expanded) s.showLess else s.readMore)
             }
         }
     }

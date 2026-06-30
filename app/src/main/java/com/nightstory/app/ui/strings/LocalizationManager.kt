@@ -2,13 +2,13 @@ package com.nightstory.app.ui.strings
 
 import androidx.compose.runtime.compositionLocalOf
 
-val LocalStrings = compositionLocalOf { englishStrings }
+val LocalStrings = compositionLocalOf { persianStrings }
 
 object LocalizationManager {
 
     fun getStrings(language: String): LocalizedStrings {
         return when (language) {
-            "Persian" -> persianStrings
+            "English" -> englishStrings
             "Arabic" -> arabicStrings
             "Spanish" -> spanishStrings
             "French" -> frenchStrings
@@ -22,33 +22,15 @@ object LocalizationManager {
             "Italian" -> italianStrings
             "Russian" -> russianStrings
             "Dutch" -> dutchStrings
-            else -> englishStrings
-        }
-    }
-
-    fun getLanguageName(language: String): String {
-        return when (language) {
-            "Persian" -> "فارسی"
-            "Arabic" -> "العربية"
-            "Spanish" -> "Español"
-            "French" -> "Français"
-            "German" -> "Deutsch"
-            "Portuguese" -> "Português"
-            "Chinese" -> "中文"
-            "Japanese" -> "日本語"
-            "Korean" -> "한국어"
-            "Hindi" -> "हिन्दी"
-            "Turkish" -> "Türkçe"
-            "Italian" -> "Italiano"
-            "Russian" -> "Русский"
-            "Dutch" -> "Nederlands"
-            else -> "English"
+            else -> persianStrings
         }
     }
 
     fun getLocalizedLanguageList(): List<Pair<String, String>> {
         return listOf(
+            "Persian" to "فارسی",
             "English" to "English",
+            "Arabic" to "العربية",
             "Spanish" to "Español",
             "French" to "Français",
             "German" to "Deutsch",
@@ -56,8 +38,6 @@ object LocalizationManager {
             "Chinese" to "中文",
             "Japanese" to "日本語",
             "Korean" to "한국어",
-            "Arabic" to "العربية",
-            "Persian" to "فارسی",
             "Hindi" to "हिन्दी",
             "Turkish" to "Türkçe",
             "Italian" to "Italiano",

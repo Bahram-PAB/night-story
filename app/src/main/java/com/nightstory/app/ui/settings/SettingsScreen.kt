@@ -1,6 +1,5 @@
 package com.nightstory.app.ui.settings
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,29 +15,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nightstory.app.ui.strings.LocalStrings
 import com.nightstory.app.ui.strings.LocalizationManager
 
-val openaiTTSModels = listOf("tts-1", "tts-1-hd")
-val openaiTVoices = listOf("alloy", "echo", "fable", "onyx", "nova", "shimmer")
-
-val googleTVoices = listOf(
-    "en-US-Wavenet-A", "en-US-Wavenet-B", "en-US-Wavenet-C", "en-US-Wavenet-D",
-    "en-US-Wavenet-E", "en-US-Wavenet-F", "en-GB-Wavenet-A", "en-GB-Wavenet-B",
-    "en-AU-Wavenet-A", "en-AU-Wavenet-B", "en-IN-Wavenet-A", "en-IN-Wavenet-B",
-    "de-DE-Wavenet-A", "de-DE-Wavenet-B", "fr-FR-Wavenet-A", "fr-FR-Wavenet-B",
-    "es-ES-Wavenet-A", "es-ES-Wavenet-B", "pt-BR-Wavenet-A", "ja-JP-Wavenet-A",
-    "ko-KR-Wavenet-A", "cmn-CN-Wavenet-A", "ar-XA-Wavenet-A", "hi-IN-Wavenet-A",
-    "fa-IR-Wavenet-A", "tr-TR-Wavenet-A", "it-IT-Wavenet-A", "ru-RU-Wavenet-A"
-)
-
-val geminiModels = listOf("gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro")
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val s = LocalStrings.current
     var showApiKey by remember { mutableStateOf(false) }
-    var showTTSApiKey by remember { mutableStateOf(false) }
-    var showGoogleTTSKey by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.saved) {
         if (uiState.saved) { kotlinx.coroutines.delay(2000); viewModel.clearSaved() }
@@ -51,76 +33,88 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             Text(s.settingsSubtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(28.dp))
 
-            // Story Generation
-            SectionHeader(s.storyGeneration, Icons.Default.AutoAwesome)
-            Spacer(Modifier.height(8.dp))
-            PasswordField(uiState.apiKey, { viewModel.updateApiKey(it) }, s.geminiApiKey, s.geminiApiKeyPlaceholder, showApiKey, { showApiKey = !showApiKey }, s.geminiApiKeyHelper, s.toggleVisibility)
-            Spacer(Modifier.height(16.dp))
-            DropdownField(s.geminiModel, uiState.model, geminiModels, Icons.Default.SmartToy) { viewModel.updateModel(it) }
-
-            Spacer(Modifier.height(28.dp))
-
-            // Story Preferences
-            SectionHeader(s.storyPreferences, Icons.Default.Palette)
+            // ===== API SETTINGS =====
+            SectionHeader(s.apiSettings, Icons.Default.Cloud)
             Spacer(Modifier.height(8.dp))
 
-            // Language dropdown - shows localized language names
-            val langPairs = LocalizationManager.getLocalizedLanguageList()
-            val currentLangDisplay = langPairs.firstOrNull { it.first == uiState.language }?.second ?: uiState.language
-            DropdownField(s.storyLanguage, currentLangDisplay, langPairs.map { it.second }, Icons.Default.Language) { selected ->
-                val langId = langPairs.firstOrNull { it.second == selected }?.first ?: selected
-                viewModel.updateLanguage(langId)
-            }
+            // Endpoint
+            OutlinedTextField(
+                uiState.apiEndpoint, { viewModel.updateApiEndpoint(it) },
+                label = { Text(s.apiEndpoint) }, placeholder = { Text(s.apiEndpointPlaceholder) },
+                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Link, null) }
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(s.apiEndpointHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(Modifier.height(12.dp))
 
-            // Style dropdown - shows localized style names
-            val styleList = LocalizationManager.getLocalizedStyleList(s)
-            val currentStyleDisplay = LocalizationManager.getStyleDisplay(uiState.style, s)
-            DropdownField(s.storyStyle, currentStyleDisplay, styleList, Icons.Default.Style) { selected ->
-                val styleId = LocalizationManager.getStyleId(selected, s)
-                viewModel.updateStyle(styleId)
-            }
+            // API Key
+            OutlinedTextField(
+                uiState.apiKey, { viewModel.updateApiKey(it) },
+                label = { Text(s.apiKeyLabel) }, placeholder = { Text(s.apiKeyPlaceholder) },
+                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Key, null) },
+                trailingIcon = { IconButton(onClick = { showApiKey = !showApiKey }) { Icon(if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility, s.toggleVisibility) } },
+                visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation()
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(s.apiKeyHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Spacer(Modifier.height(12.dp))
+
+            // Model Name
+            OutlinedTextField(
+                uiState.modelName, { viewModel.updateModelName(it) },
+                label = { Text(s.modelNameLabel) }, placeholder = { Text(s.modelNamePlaceholder) },
+                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                leadingIcon = { Icon(Icons.Default.SmartToy, null) }
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(s.modelNameHelper, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(Modifier.height(28.dp))
             HorizontalDivider()
             Spacer(Modifier.height(28.dp))
 
-            // Voice Section
-            SectionHeader(s.voiceSection, Icons.Default.RecordVoiceOver)
-            Text(s.voiceSectionSubtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // ===== STORY PREFERENCES =====
+            SectionHeader(s.storyPreferences, Icons.Default.Palette)
+            Spacer(Modifier.height(8.dp))
+
+            // Language
+            val langPairs = LocalizationManager.getLocalizedLanguageList()
+            val currentLangDisplay = langPairs.firstOrNull { it.first == uiState.language }?.second ?: uiState.language
+            DropdownField(s.storyLanguage, currentLangDisplay, langPairs.map { it.second }, Icons.Default.Language) { selected ->
+                viewModel.updateLanguage(langPairs.firstOrNull { it.second == selected }?.first ?: selected)
+            }
+
             Spacer(Modifier.height(12.dp))
 
-            val ttsProviders = listOf("device" to s.deviceVoice, "openai" to s.openaiTTS, "google" to s.googleCloudTTS)
-            DropdownField(s.ttsProvider, ttsProviders.firstOrNull { it.first == uiState.ttsProvider }?.second ?: s.deviceVoice, ttsProviders.map { it.second }, Icons.Default.VoiceOverOff) { selected ->
-                viewModel.updateTTSProvider(ttsProviders.firstOrNull { it.second == selected }?.first ?: "device")
+            // Style
+            val styleList = LocalizationManager.getLocalizedStyleList(s)
+            val currentStyleDisplay = LocalizationManager.getStyleDisplay(uiState.style, s)
+            DropdownField(s.storyStyle, currentStyleDisplay, styleList, Icons.Default.Style) { selected ->
+                viewModel.updateStyle(LocalizationManager.getStyleId(selected, s))
             }
 
-            AnimatedVisibility(visible = uiState.ttsProvider == "openai") {
-                Column {
-                    Spacer(Modifier.height(16.dp))
-                    PasswordField(uiState.openaiTTSApiKey, { viewModel.updateOpenaiTTSApiKey(it) }, s.openaiApiKey, s.openaiApiKeyPlaceholder, showTTSApiKey, { showTTSApiKey = !showTTSApiKey }, s.openaiApiKeyHelper, s.toggleVisibility)
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(uiState.openaiTTSBaseUrl, { viewModel.updateOpenaiTTSBaseUrl(it) }, label = { Text(s.apiBaseUrl) }, placeholder = { Text("https://api.openai.com/") }, modifier = Modifier.fillMaxWidth(), singleLine = true, leadingIcon = { Icon(Icons.Default.Link, null) })
-                    Spacer(Modifier.height(12.dp))
-                    DropdownField(s.ttsModel, uiState.openaiTTSModel, openaiTTSModels, Icons.Default.SmartToy) { viewModel.updateOpenaiTTSModel(it) }
-                    Spacer(Modifier.height(12.dp))
-                    DropdownField(s.voice, uiState.openaiTVoice, openaiTVoices, Icons.Default.RecordVoiceOver) { viewModel.updateOpenaiTVoice(it) }
-                    Spacer(Modifier.height(12.dp))
-                    Text("${s.speed}: ${"%.1f".format(uiState.openaiTTSSpeed)}x", style = MaterialTheme.typography.bodyMedium)
-                    Slider(uiState.openaiTTSSpeed, { viewModel.updateOpenaiTTSSpeed(it) }, valueRange = 0.5f..2.0f, steps = 14)
-                }
+            Spacer(Modifier.height(12.dp))
+
+            // Gender
+            val genderOptions = listOf("boy" to s.genderBoy, "girl" to s.genderGirl, "both" to s.genderBoth)
+            val currentGenderDisplay = genderOptions.firstOrNull { it.first == uiState.gender }?.second ?: s.genderBoth
+            DropdownField(s.childGender, currentGenderDisplay, genderOptions.map { it.second }, Icons.Default.ChildCare) { selected ->
+                viewModel.updateGender(genderOptions.firstOrNull { it.second == selected }?.first ?: "both")
             }
 
-            AnimatedVisibility(visible = uiState.ttsProvider == "google") {
-                Column {
-                    Spacer(Modifier.height(16.dp))
-                    PasswordField(uiState.googleTTSApiKey, { viewModel.updateGoogleTTSApiKey(it) }, s.googleCloudApiKey, s.googleApiKeyPlaceholder, showGoogleTTSKey, { showGoogleTTSKey = !showGoogleTTSKey }, s.googleApiKeyHelper, s.toggleVisibility)
-                    Spacer(Modifier.height(12.dp))
-                    DropdownField(s.voice, uiState.googleTVoice, googleTVoices, Icons.Default.RecordVoiceOver) { viewModel.updateGoogleTVoice(it) }
-                    Spacer(Modifier.height(12.dp))
-                    DropdownField(s.language, uiState.googleTTSLanguage, langToCodeList(), Icons.Default.Language) { viewModel.updateGoogleTTSLanguage(it) }
-                }
+            Spacer(Modifier.height(12.dp))
+
+            // Age Range
+            val ageOptions = listOf(
+                "0-2" to s.ageBaby, "3-5" to s.ageToddler, "6-8" to s.ageChild, "9-12" to s.ageOlder
+            )
+            val currentAgeDisplay = ageOptions.firstOrNull { it.first == uiState.ageRange }?.second ?: s.ageToddler
+            DropdownField(s.ageRange, currentAgeDisplay, ageOptions.map { it.second }, Icons.Default.Cake) { selected ->
+                viewModel.updateAgeRange(ageOptions.firstOrNull { it.second == selected }?.first ?: "3-5")
             }
 
             Spacer(Modifier.height(32.dp))
@@ -137,14 +131,6 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
     Row { Icon(icon, null, tint = MaterialTheme.colorScheme.primary); Spacer(Modifier.width(8.dp)); Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) }
 }
 
-@Composable
-private fun PasswordField(value: String, onValueChange: (String) -> Unit, label: String, placeholder: String, showKey: Boolean, onToggleShow: () -> Unit, helperText: String? = null, toggleLabel: String = "Toggle visibility") {
-    Column {
-        OutlinedTextField(value, onValueChange, label = { Text(label) }, placeholder = { Text(placeholder) }, modifier = Modifier.fillMaxWidth(), leadingIcon = { Icon(Icons.Default.Key, null) }, trailingIcon = { IconButton(onClick = onToggleShow) { Icon(if (showKey) Icons.Default.VisibilityOff else Icons.Default.Visibility, toggleLabel) } }, visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(), singleLine = true)
-        helperText?.let { Spacer(Modifier.height(4.dp)); Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DropdownField(label: String, selectedValue: String, options: List<String>, icon: androidx.compose.ui.graphics.vector.ImageVector, onSelect: (String) -> Unit) {
@@ -156,5 +142,3 @@ private fun DropdownField(label: String, selectedValue: String, options: List<St
         }
     }
 }
-
-private fun langToCodeList() = listOf("en-US", "es-ES", "fr-FR", "de-DE", "pt-BR", "cmn-CN", "ja-JP", "ko-KR", "ar-XA", "fa-IR", "hi-IN", "tr-TR", "it-IT", "ru-RU", "nl-NL")
