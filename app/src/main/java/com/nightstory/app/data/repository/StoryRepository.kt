@@ -175,26 +175,30 @@ class StoryRepository(
 
         val topic = storyTopics[seed % storyTopics.size]
 
-        return """تو یک نویسنده فوق‌العاده داستان‌های کودکان هستی.
+        return """یک نویسنده حرفهای داستان کودکان هستی. فقط و فقط به $lang بنویس. هیچ کلمه انگلیسی استفاده نکن.
 
-وظیفه: یک داستان کوتاه قبل از خواب برای بچه‌ها بنویس.
+وظیفه: یک داستان کوتاه قبل از خواب بنویس.
 
-قوانین مهم:
-- کاملاً به $lang بنویس
-- سبک داستان: $style
+فرمت خروجی:
+خط اول: عنوان کوتاه داستان (حداکثر ۵ کلمه)
+خط دوم: خالی
+از خط سوم: متن داستان
+
+قوانین:
 - موضوع: $topic
-- محدوده سنی: $ageDesc
-- جنسیت کودک: ${genderText.first}
-- داستان ۱۵۰ تا ۳۰۰ کلمه باشد
-- از زبان ساده و قابل فهم استفاده کن
-- شخصیت‌های جذاب و دوست‌داشتنی داشته باش
-- پایان خوش و آرامش‌بخش داشته باش
-- مناسب خواندن قبل از خواب باشد
-- seed تصادفی: $seed (برای تضمین یکتا بودن)
-- مستقیماً از داستان شروع کن (بدون عنوان، بدون مقدمه)
-- اگر جنسیت دختر یا پسر انتخاب شده، شخصیت اصلی حتماً آن جنسیت باشد
-
-فرمت: فقط متن داستان، هیچ چیز دیگری ننویس."""
+- سبک: $style
+- سن: $ageDesc
+- جنسیت شخصیت اصلی: ${genderText.first}
+- ۱۵۰ تا ۳۰۰ کلمه
+- زبان ساده و روان
+- شخصیتهای جذاب و دوستداشتنی
+- پایان خوش و آرامشبخش
+- مناسب قبل از خواب
+- هیچ کلمه یا عبارت انگلیسی در متن نباشد
+- تمام متن فارسی باشد
+- اعداد را فارسی بنویس (نه لاتین)
+- seed: $seed (برای یکتا بودن)
+- اگر جنسیت مشخص شده، شخصیت اصلی همان جنسیت باشد"""
     }
 
     private fun buildCustomPrompt(userInput: String): String {
@@ -217,27 +221,31 @@ class StoryRepository(
             else -> "کودک (۳ تا ۵ سال)"
         }
 
-        return """تو یک نویسنده فوق‌العاده داستان‌های کودکان هستی.
+        return """یک نویسنده حرفهای داستان کودکان هستی. فقط و فقط به $lang بنویس. هیچ کلمه انگلیسی استفاده نکن.
 
-وظیفه: یک داستان کوتاه قبل از خواب برای بچه‌ها بنویس بر اساس درخواست کاربر.
+وظیفه: یک داستان کوتاه قبل از خواب بنویس بر اساس درخواست کاربر.
 
-قوانین مهم:
-- کاملاً به $lang بنویس
-- سبک داستان: $style
-- محدوده سنی: $ageDesc
-- جنسیت کودک: ${genderText.first}
-- داستان ۱۵۰ تا ۳۰۰ کلمه باشد
-- از زبان ساده و قابل فهم استفاده کن
-- شخصیت‌های جذاب و دوست‌داشتنی داشته باش
-- پایان خوش و آرامش‌بخش داشته باش
-- مناسب خواندن قبل از خواب باشد
-- مستقیماً از داستان شروع کن (بدون عنوان، بدون مقدمه)
-- اگر جنسیت دختر یا پسر انتخاب شده، شخصیت اصلی حتماً آن جنسیت باشد
+فرمت خروجی:
+خط اول: عنوان کوتاه داستان (حداکثر ۵ کلمه)
+خط دوم: خالی
+از خط سوم: متن داستان
+
+قوانین:
+- سبک: $style
+- سن: $ageDesc
+- جنسیت شخصیت اصلی: ${genderText.first}
+- ۱۵۰ تا ۳۰۰ کلمه
+- زبان ساده و روان
+- شخصیتهای جذاب و دوستداشتنی
+- پایان خوش و آرامشبخش
+- مناسب قبل از خواب
+- هیچ کلمه یا عبارت انگلیسی در متن نباشد
+- تمام متن فارسی باشد
+- اعداد را فارسی بنویس (نه لاتین)
+- اگر جنسیت مشخص شده، شخصیت اصلی همان جنسیت باشد
 - درخواست کاربر را دقیقاً اجرا کن
 
-درخواست کاربر: $userInput
-
-فرمت: فقط متن داستان، هیچ چیز دیگری ننویس."""
+درخواست کاربر: $userInput"""
     }
 
     private fun cleanStoryText(raw: String): String {
@@ -249,16 +257,17 @@ class StoryRepository(
     }
 
     private fun extractTitle(content: String, prompt: String): String {
-        val firstLine = content.lines().first().trim()
-        // Use first line as title if it looks like one (short, no period ending)
-        if (firstLine.length in 3..80 && !firstLine.endsWith(".")) {
+        val lines = content.lines()
+        val firstLine = lines.first().trim()
+
+        // New format: first line is the title (short, no period)
+        if (firstLine.length in 2..50 && !firstLine.endsWith(".") && !firstLine.endsWith("،")) {
             return firstLine
         }
-        // Fallback: create title from first 50 chars of content
-        val words = content.take(100).substringBefore("\n")
-        return words.take(50).let {
-            if (it.length == 50) "$it..." else it
-        }
+
+        // Fallback: use first 5 words as title
+        val words = firstLine.split(" ").take(5).joinToString(" ")
+        return if (words.length > 3) words else "داستان"
     }
 
     private fun StoryEntity.toDomain() = Story(

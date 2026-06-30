@@ -147,7 +147,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             Spacer(Modifier.height(12.dp))
 
             Text(
-                text = "${s.appName} v1.2.0",
+                text = "${s.appName} v1.2.1",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -171,13 +171,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     modifier = Modifier.clickable { uriHandler.openUri("https://www.linkedin.com/in/bahram-pouralibaba-1a992239") }
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "توسعه‌دهنده: بهرام پورعلی‌ibaba",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             Spacer(Modifier.height(24.dp))
         }
     }
