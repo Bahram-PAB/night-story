@@ -14,3 +14,5 @@ local.properties
 *.aab
 *.jks
 *.keystore
+# Keep our release keystore for CI signing
+!night-story-release.keystore
