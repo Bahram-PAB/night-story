@@ -79,7 +79,7 @@ fun AboutScreen() {
 
             // Footer
             Text(
-                text = "نسخه ${s.appName} 1.2.2",
+                text = "نسخه ${s.appName} 1.2.3",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

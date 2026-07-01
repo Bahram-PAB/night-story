@@ -13,17 +13,16 @@ android {
         applicationId = "com.nightstory.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.2.2"
+        versionCode = 6
+        versionName = "1.2.3"
     }
 
     signingConfigs {
-        // Use debug keystore for release builds (allows sideloading)
         create("release") {
-            storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            storeFile = file("${rootDir}/night-story-release.keystore")
+            storePassword = "nightstory2024"
+            keyAlias = "nightstory"
+            keyPassword = "nightstory2024"
         }
     }
 
