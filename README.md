@@ -1,82 +1,54 @@
-# Night Story 🌙✨
+# داستان شب
 
-A magical Android app that creates bedtime stories for kids using AI.
+**یک اپلیکیشن اندروید برای تولید داستانهای کودکانه با هوش مصنوعی**
 
-## Features
+---
 
-- **AI Story Generation** — powered by Google Gemini (free API key)
-- **Read Aloud** — stories read aloud using Android's built-in text-to-speech
-- **Story Library** — save and browse all your generated stories
-- **15 Languages** — English, Spanish, French, Arabic, Persian, and more
-- **10 Story Styles** — Fairy Tale, Adventure, Funny, Space, Dinosaurs, and more
-- **Secure Storage** — API keys stored with encryption
+## 🌙 ویژگیها
 
-## Setup
+- **داستانهای تصادفی**: با یک کلیک داستانهای کوتاه و جذاب تولید کنید.
+- **سفارشیسازی**: موضوع داستان، زبان، سبک، جنسیت و محدوده سنی را انتخاب کنید.
+- **ذخیره داستانها**: داستانهای تولید شده را ذخیره کنید و بعداً بخوانید.
+- **اشتراکگذاری**: داستانها را با دوستان و خانواده به اشتراک بگذارید.
+- **تنظیمات API**: امکان اتصال به سرورهای دلخواه برای تولید داستان.
+- **درباره**: توضیحات کامل درباره اپلیکیشن و ویژگیها.
 
-### 1. Get a Free Gemini API Key
+---
 
-1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
-2. Sign in with your Google account
-3. Click **"Create API Key"**
-4. Copy the key
+## 📱 نصب
 
-### 2. Install the App
+1. آخرین نسخه APK را از [صفحه انتشارها](https://github.com/Bahram-PAB/night-story/releases) دانلود کنید.
+2. فایل APK را روی دستگاه اندروید خود نصب کنید.
+3. اپ را باز کنید و تنظیمات API را وارد کنید (مثلاً از OpenRouter یا سرور شخصی خود استفاده کنید).
 
-**Option A: Build with Android Studio**
-1. Clone this repo
-2. Open in Android Studio
-3. Run on device/emulator
+---
 
-**Option B: GitHub Actions APK**
-1. Push to GitHub
-2. Go to Actions tab → latest build
-3. Download the APK from Artifacts
+## ⚙️ تنظیمات API
 
-### 3. Configure
+برای تولید داستان، به یک کلید API نیاز دارید. میتوانید از سرویسهایی مثل:
+- [OpenRouter](https://openrouter.ai)
+- یا سرور شخصی خود استفاده کنید.
 
-1. Open the app
-2. Go to **Settings** tab
-3. Paste your Gemini API key
-4. Choose your preferred language and story style
-5. Tap **Save**
+تنظیمات را در بخش **تنظیمات** وارد کنید و دکمه **تست ارتباط** را بزنید.
 
-## Tech Stack
+---
 
-- **Language:** Kotlin
-- **UI:** Jetpack Compose + Material 3
-- **API:** Google Gemini (generativelanguage.googleapis.com)
-- **TTS:** Android TextToSpeech engine
-- **Database:** Room
-- **Security:** EncryptedSharedPreferences
-- **Architecture:** MVVM
+## 📝 درباره
 
-## Project Structure
+این اپلیکیشن با استفاده از:
+- **Kotlin** و **Jetpack Compose** ساخته شده است.
+- از هوش مصنوعی برای تولید داستانهای کوتاه و جذاب استفاده میکند.
+- مناسب خواندن قبل از خواب برای کودکان است.
 
-```
-app/src/main/java/com/nightstory/app/
-├── data/
-│   ├── api/          # Gemini API service & models
-│   ├── db/           # Room database, DAO, entities
-│   └── repository/   # Story repository
-├── domain/model/     # Domain models
-└── ui/
-    ├── home/         # Story generation screen
-    ├── history/      # Story library screen
-    ├── settings/     # API key & preferences screen
-    ├── navigation/   # Nav graph
-    └── theme/        # Colors & theme
-```
+ویژگیهای کلیدی:
+- تولید داستانهای تصادفی با موضوعات متنوع
+- امکان سفارشیسازی داستان با ورودی کاربر
+- تنظیمات زبان، سبک، جنسیت و محدوده سنی
+- ذخیره داستانها برای دسترسی آسان
+- اشتراکگذاری داستانها با دیگران
 
-## Build APK via GitHub Actions
+---
 
-This project includes a GitHub Actions workflow that automatically builds both debug and release APKs on every push. To use it:
+## 📧 تماس
 
-1. Create a GitHub repository
-2. Push this code
-3. Go to **Actions** tab
-4. Wait for the build to complete
-5. Download APKs from **Artifacts**
-
-## License
-
-MIT
+برای گزارش باگ یا پیشنهاد بهبود، به [گیتهاب](https://github.com/Bahram-PAB/night-story) مراجعه کنید.

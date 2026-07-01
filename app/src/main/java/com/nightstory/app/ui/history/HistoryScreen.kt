@@ -8,7 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -92,6 +93,24 @@ fun StoryCard(story: StoryEntity, onDelete: () -> Unit) {
             TextButton(onClick = { expanded = !expanded }, modifier = Modifier.align(Alignment.End)) {
                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp)); Text(if (expanded) s.showLess else s.readMore)
+            }
+            if (expanded) {
+                Spacer(Modifier.height(16.dp))
+                val context = LocalContext.current
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "${story.title}\n\n${story.content}")
+                        }
+                        context.startActivity(Intent.createChooser(intent, s.share))
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Share, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(s.share)
+                }
             }
         }
     }

@@ -33,6 +33,7 @@ data class LocalizedStrings(
     val showLess: String,
     val cancel: String,
     val delete: String,
+    val share: String,
 
     // Settings Screen
     val settingsTitle: String,

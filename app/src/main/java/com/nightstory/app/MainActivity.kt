@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.nightstory.app.data.SettingsStore
 import com.nightstory.app.ui.history.HistoryScreen
 import com.nightstory.app.ui.home.HomeScreen
+import com.nightstory.app.ui.about.AboutScreen
 import com.nightstory.app.ui.navigation.Screen
 import com.nightstory.app.ui.navigation.bottomNavItems
 import com.nightstory.app.ui.settings.SettingsScreen
@@ -95,6 +96,7 @@ fun NightStoryNavHost() {
             composable(Screen.Home.route) { HomeScreen() }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.About.route) { AboutScreen() }
         }
     }
 }

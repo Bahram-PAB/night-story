@@ -11,7 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -128,6 +129,22 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
                         Text(story.content, style = MaterialTheme.typography.bodyLarge, lineHeight = MaterialTheme.typography.bodyLarge.lineHeight)
                     }
+                    Spacer(Modifier.height(16.dp))
+                    val context = LocalContext.current
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "${story.title}\n\n${story.content}")
+                            }
+                            context.startActivity(Intent.createChooser(intent, s.share))
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Share, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(s.share)
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -147,7 +164,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             Spacer(Modifier.height(12.dp))
 
             Text(
-                text = "${s.appName} v1.2.1",
+                text = "${s.appName} v1.2.2",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
