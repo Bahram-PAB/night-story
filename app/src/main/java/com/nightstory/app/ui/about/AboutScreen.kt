@@ -1,5 +1,6 @@
 package com.nightstory.app.ui.about
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -78,7 +79,7 @@ fun AboutScreen() {
 
             // Footer
             Text(
-                text = "نسخه ${s.appName} 1.2.1",
+                text = "نسخه ${s.appName} 1.2.2",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

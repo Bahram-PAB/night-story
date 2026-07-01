@@ -71,6 +71,7 @@ fun NightStoryNavHost() {
                         is Screen.Home -> s.navHome
                         is Screen.History -> s.navHistory
                         is Screen.Settings -> s.navSettings
+                        is Screen.About -> "درباره"
                     }
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = label) },
