@@ -1,6 +1,7 @@
 package com.nightstory.app.data.api
 
 import okhttp3.OkHttpClient
+import okhttp3.Interceptor
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -13,6 +14,17 @@ object ChatClient {
             .connectTimeout(60, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
+            .addInterceptor(
+                Interceptor { chain ->
+                    val request = chain.request().newBuilder()
+                        .header("User-Agent", "NightStory/1.2.3")
+                        .header("Origin", "https://night-story.app")
+                        .header("Accept", "application/json")
+                        .header("Content-Type", "application/json")
+                        .build()
+                    chain.proceed(request)
+                }
+            )
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level = HttpLoggingInterceptor.Level.BODY
