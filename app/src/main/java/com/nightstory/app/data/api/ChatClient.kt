@@ -18,9 +18,6 @@ object ChatClient {
                 Interceptor { chain ->
                     val request = chain.request().newBuilder()
                         .header("User-Agent", "NightStory/1.2.3")
-                        .header("Origin", "https://night-story.app")
-                        .header("Accept", "application/json")
-                        .header("Content-Type", "application/json")
                         .build()
                     chain.proceed(request)
                 }
