@@ -7,19 +7,22 @@ import androidx.room.Room
 import com.nightstory.app.data.SettingsStore
 import com.nightstory.app.data.db.AppDatabase
 import com.nightstory.app.data.repository.StoryRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
     private val settingsStore = SettingsStore(application)
     private val db = Room.databaseBuilder(application, AppDatabase::class.java, "night_story_db").build()
     private val repository = StoryRepository(db.storyDao(), settingsStore)
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    private var fetchModelsJob: Job? = null
 
     init {
         val s = settingsStore
@@ -32,15 +35,36 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             gender = s.childGender,
             ageRange = s.ageRange
         )
+        // Auto-fetch models if endpoint + key already saved
+        if (s.apiEndpoint.isNotBlank() && s.apiKey.isNotBlank()) {
+            fetchModels()
+        }
     }
 
-    fun updateApiEndpoint(v: String) { _uiState.value = _uiState.value.copy(apiEndpoint = v) }
-    fun updateApiKey(v: String) { _uiState.value = _uiState.value.copy(apiKey = v) }
+    fun updateApiEndpoint(v: String) {
+        _uiState.value = _uiState.value.copy(apiEndpoint = v)
+        debouncedFetchModels()
+    }
+
+    fun updateApiKey(v: String) {
+        _uiState.value = _uiState.value.copy(apiKey = v)
+        debouncedFetchModels()
+    }
+
     fun updateModelName(v: String) { _uiState.value = _uiState.value.copy(modelName = v) }
     fun updateLanguage(v: String) { _uiState.value = _uiState.value.copy(language = v) }
     fun updateStyle(v: String) { _uiState.value = _uiState.value.copy(style = v) }
     fun updateGender(v: String) { _uiState.value = _uiState.value.copy(gender = v) }
     fun updateAgeRange(v: String) { _uiState.value = _uiState.value.copy(ageRange = v) }
+
+    // Debounce: wait 800ms after user stops typing before fetching
+    private fun debouncedFetchModels() {
+        fetchModelsJob?.cancel()
+        fetchModelsJob = viewModelScope.launch {
+            delay(800)
+            fetchModels()
+        }
+    }
 
     fun testConnection() {
         val state = _uiState.value
@@ -48,20 +72,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _uiState.value = state.copy(testResult = TestResult.Error("آدرس سرور و کلید API را وارد کنید"))
             return
         }
-
-        // Save first so repository uses latest values
         settingsStore.apiEndpoint = state.apiEndpoint.trim()
         settingsStore.apiKey = state.apiKey.trim()
-
         _uiState.value = _uiState.value.copy(isTesting = true, testResult = null)
-
         viewModelScope.launch {
             repository.testConnection()
                 .onSuccess { models ->
                     _uiState.value = _uiState.value.copy(
                         isTesting = false,
                         testResult = TestResult.Success(models.size),
-                        availableModels = models
+                        availableModels = models,
+                        isModelsLoading = false
                     )
                 }
                 .onFailure { e ->
@@ -70,6 +91,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         testResult = TestResult.Error(e.message ?: "خطای ناشناخته")
                     )
                 }
+        }
+    }
+
+    fun fetchModels() {
+        val state = _uiState.value
+        if (state.apiEndpoint.isBlank() || state.apiKey.isBlank()) return
+        _uiState.value = _uiState.value.copy(isModelsLoading = true)
+        viewModelScope.launch {
+            val models = repository.fetchModels()
+            if (models.isNotEmpty()) {
+                _uiState.value = _uiState.value.copy(
+                    availableModels = models,
+                    isModelsLoading = false
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(isModelsLoading = false)
+            }
         }
     }
 
@@ -89,13 +127,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _uiState.value = state.copy(saved = true)
     }
 
-    fun clearSaved() {
-        _uiState.value = _uiState.value.copy(saved = false)
-    }
-
-    fun clearTestResult() {
-        _uiState.value = _uiState.value.copy(testResult = null)
-    }
+    fun clearSaved() { _uiState.value = _uiState.value.copy(saved = false) }
+    fun clearTestResult() { _uiState.value = _uiState.value.copy(testResult = null) }
 }
 
 data class SettingsUiState(
@@ -109,7 +142,8 @@ data class SettingsUiState(
     val saved: Boolean = false,
     val isTesting: Boolean = false,
     val testResult: TestResult? = null,
-    val availableModels: List<String> = emptyList()
+    val availableModels: List<String> = emptyList(),
+    val isModelsLoading: Boolean = false
 )
 
 sealed class TestResult {
