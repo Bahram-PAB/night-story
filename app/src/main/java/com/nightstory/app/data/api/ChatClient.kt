@@ -18,7 +18,7 @@ object ChatClient {
             .addInterceptor(
                 Interceptor { chain ->
                     val request = chain.request().newBuilder()
-                        .header("User-Agent", "NightStory/1.2.3")
+                        .header("User-Agent", "NightStory/1.2.8")
                         .build()
                     chain.proceed(request)
                 }
