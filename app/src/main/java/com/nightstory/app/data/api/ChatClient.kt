@@ -1,5 +1,6 @@
 package com.nightstory.app.data.api
 
+import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.Interceptor
 import okhttp3.logging.HttpLoggingInterceptor
@@ -30,9 +31,12 @@ object ChatClient {
             .build()
     }
 
+    // LENIENT: ignore unknown fields + lenient parsing
+    private val gson = GsonBuilder()
+        .setLenient()
+        .create()
+
     fun createService(baseUrl: String): ChatService {
-        // Normalize: strip trailing slashes and /v1 suffix
-        // since service paths already include /v1/
         var url = baseUrl.trimEnd('/')
         if (url.endsWith("/v1")) {
             url = url.removeSuffix("/v1")
@@ -42,7 +46,7 @@ object ChatClient {
         return Retrofit.Builder()
             .baseUrl(url)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(ChatService::class.java)
     }
