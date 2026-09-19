@@ -7,13 +7,39 @@ import androidx.security.crypto.MasterKeys
 
 class SettingsStore(context: Context) {
 
-    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-        "night_story_prefs",
-        MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
-        context,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val prefs: SharedPreferences = createPrefs(context)
+
+    companion object {
+        private const val PREFS_NAME = "night_story_prefs"
+
+        // ponytail: EncryptedSharedPreferences crashes with AEADBadTagException when the
+        // AndroidKeyStore master key is lost (uninstall/reinstall cycles, device backup
+        // restore, MIUI keystore wipes) while the encrypted prefs file survives.
+        // Fix: wipe the corrupt file and retry once; final fallback = plain prefs
+        // so the app can never crash at launch. Upgrade path: migrate to DataStore.
+        private fun createPrefs(context: Context): SharedPreferences {
+            return try {
+                createEncrypted(context)
+            } catch (_: Exception) {
+                context.deleteSharedPreferences(PREFS_NAME)
+                try {
+                    createEncrypted(context)
+                } catch (_: Exception) {
+                    context.getSharedPreferences("${PREFS_NAME}_fallback", Context.MODE_PRIVATE)
+                }
+            }
+        }
+
+        private fun createEncrypted(context: Context): SharedPreferences {
+            return EncryptedSharedPreferences.create(
+                PREFS_NAME,
+                MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
+                context,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
+    }
 
     // ===== API Configuration =====
 
@@ -47,15 +73,13 @@ class SettingsStore(context: Context) {
         get() = prefs.getString(KEY_AGE_RANGE, "3-5") ?: "3-5"
         set(value) = prefs.edit().putString(KEY_AGE_RANGE, value).apply()
 
-    companion object {
-        private const val KEY_API_ENDPOINT = "api_endpoint"
-        private const val KEY_API_KEY = "api_key"
-        private const val KEY_MODEL_NAME = "model_name"
-        private const val KEY_STORY_LANGUAGE = "story_language"
-        private const val KEY_STORY_STYLE = "story_style"
-        private const val KEY_CHILD_GENDER = "child_gender"
-        private const val KEY_AGE_RANGE = "age_range"
-    }
+    private const val KEY_API_ENDPOINT = "api_endpoint"
+    private const val KEY_API_KEY = "api_key"
+    private const val KEY_MODEL_NAME = "model_name"
+    private const val KEY_STORY_LANGUAGE = "story_language"
+    private const val KEY_STORY_STYLE = "story_style"
+    private const val KEY_CHILD_GENDER = "child_gender"
+    private const val KEY_AGE_RANGE = "age_range"
 }
 
 enum class ChildGender(val id: String) {

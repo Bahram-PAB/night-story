@@ -1,6 +1,7 @@
 package com.nightstory.app
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,28 +32,40 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            val settingsStore = remember { SettingsStore(applicationContext) }
-            val currentLanguage = remember { settingsStore.storyLanguage }
-            val strings = remember(currentLanguage) { LocalizationManager.getStrings(currentLanguage) }
-            val layoutDirection = remember(currentLanguage) {
-                if (isRTL(currentLanguage)) LayoutDirection.Rtl else LayoutDirection.Ltr
-            }
 
-            NightStoryTheme {
-                CompositionLocalProvider(
-                    LocalStrings provides strings,
-                    LocalLayoutDirection provides layoutDirection
-                ) {
-                    NightStoryNavHost()
-                }
-            }
+        // ponytail: global crash guard so any startup exception shows a toast instead
+        // of a white-screen crash. Remove once root causes are exhausted.
+        try {
+            setContent { NightStoryRoot() }
+        } catch (e: Exception) {
+            Toast.makeText(this, "خطا در اجرا: ${e.message}", Toast.LENGTH_LONG).show()
+            android.util.Log.e("NightStory", "Startup crash", e)
         }
     }
 }
 
 fun isRTL(language: String): Boolean {
     return language in listOf("Arabic", "Persian", "Hebrew", "Urdu")
+}
+
+@Composable
+fun NightStoryRoot() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settingsStore = remember { SettingsStore(context) }
+    val currentLanguage = remember { settingsStore.storyLanguage }
+    val strings = remember(currentLanguage) { LocalizationManager.getStrings(currentLanguage) }
+    val layoutDirection = remember(currentLanguage) {
+        if (isRTL(currentLanguage)) LayoutDirection.Rtl else LayoutDirection.Ltr
+    }
+
+    NightStoryTheme {
+        CompositionLocalProvider(
+            LocalStrings provides strings,
+            LocalLayoutDirection provides layoutDirection
+        ) {
+            NightStoryNavHost()
+        }
+    }
 }
 
 @Composable
