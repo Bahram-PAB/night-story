@@ -39,6 +39,14 @@ class SettingsStore(context: Context) {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         }
+
+        private const val KEY_API_ENDPOINT = "api_endpoint"
+        private const val KEY_API_KEY = "api_key"
+        private const val KEY_MODEL_NAME = "model_name"
+        private const val KEY_STORY_LANGUAGE = "story_language"
+        private const val KEY_STORY_STYLE = "story_style"
+        private const val KEY_CHILD_GENDER = "child_gender"
+        private const val KEY_AGE_RANGE = "age_range"
     }
 
     // ===== API Configuration =====
@@ -72,14 +80,6 @@ class SettingsStore(context: Context) {
     var ageRange: String
         get() = prefs.getString(KEY_AGE_RANGE, "3-5") ?: "3-5"
         set(value) = prefs.edit().putString(KEY_AGE_RANGE, value).apply()
-
-    private const val KEY_API_ENDPOINT = "api_endpoint"
-    private const val KEY_API_KEY = "api_key"
-    private const val KEY_MODEL_NAME = "model_name"
-    private const val KEY_STORY_LANGUAGE = "story_language"
-    private const val KEY_STORY_STYLE = "story_style"
-    private const val KEY_CHILD_GENDER = "child_gender"
-    private const val KEY_AGE_RANGE = "age_range"
 }
 
 enum class ChildGender(val id: String) {
