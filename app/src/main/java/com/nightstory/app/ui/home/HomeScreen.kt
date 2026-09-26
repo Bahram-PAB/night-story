@@ -165,7 +165,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             Spacer(Modifier.height(12.dp))
 
             Text(
-                text = "${s.appName} v1.2.8",
+                text = "${s.appName} v1.2.10",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

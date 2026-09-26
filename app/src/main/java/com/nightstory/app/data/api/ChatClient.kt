@@ -18,7 +18,7 @@ object ChatClient {
             .addInterceptor(
                 Interceptor { chain ->
                     val request = chain.request().newBuilder()
-                        .header("User-Agent", "NightStory/1.2.8")
+                        .header("User-Agent", "NightStory/1.2.10")
                         .build()
                     chain.proceed(request)
                 }
@@ -37,7 +37,11 @@ object ChatClient {
         .create()
 
     fun createService(baseUrl: String): ChatService {
-        var url = baseUrl.trimEnd('/')
+        var url = baseUrl.trim().trimEnd('/')
+        // Force HTTPS — Android blocks cleartext by default and http is insecure anyway
+        if (url.startsWith("http://")) {
+            url = "https://" + url.removePrefix("http://")
+        }
         if (url.endsWith("/v1")) {
             url = url.removeSuffix("/v1")
         }
